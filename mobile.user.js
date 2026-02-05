@@ -36,7 +36,7 @@
             const src = el.currentSrc || el.src || "";
             const isAdTrack = src.includes("googleads") || src.includes("/ads/") || src.includes("doubleclick");
             if (el.duration > 60) return el;
-            const isVisible = rect.height > 40 && rect.width > 40;
+            const isVisible = (el.offsetWidth > 0 || el.offsetHeight > 0);
             const isNotHidden = window.getComputedStyle(el).display !== 'none';
             if (isVisible && isNotHidden && !isAdTrack) return el;
         }
@@ -117,27 +117,32 @@
         video.controls = true;
         wrap.appendChild(video);
 
-        let clickTimer;
-        speedInd.onclick = () => {
-            if (!clickTimer) {
-                clickTimer = setTimeout(() => {
-                    clickTimer = null;
-                    currentSpeedIdx = (currentSpeedIdx + 1) % SPEEDS.length;
-                    video.playbackRate = SPEEDS[currentSpeedIdx];
-                    speedInd.innerText = SPEEDS[currentSpeedIdx] + 'X';
-                }, 250);
-            } else {
-                clearTimeout(clickTimer);
-                location.reload();
-            }
-        };
         video.play().catch(() => {});
+
+        speedInd.onclick = () => {
+            currentSpeedIdx = (currentSpeedIdx + 1) % SPEEDS.length;
+            video.playbackRate = SPEEDS[currentSpeedIdx];
+            speedInd.innerText = SPEEDS[currentSpeedIdx] + 'X';
+        };
+        window.onpopstate = () => location.reload();
+        history.pushState(null, null, window.location.href);
     }
 
     const handleMutation = () => {
         if (document.getElementById('iso-portal-host') || document.getElementById('p-wrap')) return;
         const target = findVideoNuclear();
         if (target) injectButton(target);
+
+        const handleMutation = () => {
+            if (document.getElementById('iso-portal-host') || document.getElementById('p-wrap')) return;
+            const target = findVideoNuclear();
+            if (target) {
+                injectButton(target);
+            } else {
+                clearTimeout(window.retryTimer);
+                window.retryTimer = setTimeout(handleMutation, 2000);
+            }
+        };
     };
 
     observer = new MutationObserver(() => {
