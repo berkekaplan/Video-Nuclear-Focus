@@ -1,6 +1,6 @@
 # Video-Nuclear-Focus
 
-A high-performance, minimalist userscript designed to isolate web videos and canvases into a dedicated focus mode. Optimized for Firefox (Desktop & Mobile) via Violentmonkey or Tampermonkey.
+A high-performance, minimalist userscript designed to isolate web videos and canvases into a dedicated focus mode. Optimized for Firefox (Desktop & Mobile) via Violentmonkey or Tampermonkey. It should be used with an ad blocker. (uBlock Origin is recommended as an ad blocker.)
 
 ## Core Philosophy
 
