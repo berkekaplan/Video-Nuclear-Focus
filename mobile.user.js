@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Minimalist Focus (v7.3 - Mobile)
-// @version      7.3
+// @name         Minimalist Focus (v1.7.3 - Mobile)
+// @version      1.7.3
 // @description  Performance optimized
 // @author       Admin
 // @match         *://*/*
@@ -38,30 +38,31 @@
             }
             return null;
         }
-
         function injectButton(video) {
             if (document.getElementById('iso-portal-host')) return;
 
             const host = document.createElement('div');
             host.id = 'iso-portal-host';
+            const isIframe = (window.self !== window.top);
 
-            host.style.cssText = `position:fixed!important; top:100px!important; right:10px!important; z-index:2147483647!important; display:flex; align-items:center; background:rgba(0,0,0,0.85); border:1px solid #fff; border-radius:8px; overflow:hidden;`;
+            host.style.cssText = `position:fixed!important; top:80px!important; right:10px!important; z-index:2147483647!important; display:flex; align-items:center; background:rgba(0,0,0,0.85); border:1px solid #fff; border-radius:4px; touch-action: manipulation;`;
 
             const shadow = host.attachShadow({mode: 'open'});
-            const isIframe = (window.self !== window.top);
 
             const toggle = document.createElement('div');
             toggle.innerText = '>';
 
-            toggle.style.cssText = `padding:15px 20px; color:#fff; cursor:pointer; font-family:monospace; font-size:20px; border-right:1px solid #555; user-select:none;`;
+            toggle.style.cssText = `padding:12px 15px; color:#fff; cursor:pointer; font-family:monospace; font-size:12px; border-right:1px solid #555; user-select:none; -webkit-tap-highlight-color:transparent;`;
 
             const btn = document.createElement('button');
-            btn.innerText = isIframe ? 'EXT' : 'FOC';
+            btn.innerText = isIframe ? 'EXTRACT' : 'FOCUS';
 
-            btn.style.cssText = `all:unset!important; padding:15px 25px!important; color:#fff!important; cursor:pointer!important; font-family:monospace!important; font-size:20px!important; font-weight:bold!important; white-space:nowrap;`;
+            btn.style.cssText = `all:unset!important; padding:12px 20px!important; color:#fff!important; cursor:pointer!important; font-family:monospace!important; font-size:12px!important; font-weight:bold!important; white-space:nowrap; -webkit-tap-highlight-color:transparent;`;
 
             let isOpen = true;
-            toggle.onclick = () => {
+            toggle.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 isOpen = !isOpen;
                 btn.style.display = isOpen ? 'block' : 'none';
                 toggle.innerText = isOpen ? '>' : '<';
@@ -71,7 +72,14 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 if (isIframe) {
-                    window.open(window.location.href, '_blank');
+                    const url = window.location.href;
+                    const newWindow = window.open(url, '_blank');
+                    if (!newWindow) {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.target = '_blank';
+                        a.click();
+                    }
                 } else {
                     launchFocus(video);
                 }
@@ -156,4 +164,3 @@
 
         handleMutation();
 })();
-
