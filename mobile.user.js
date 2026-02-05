@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Minimalist Focus (v7.3.7 - Balanced Focus)
-// @version      7.3.7
+// @name         Minimalist Focus (v7.3.8 - Balanced Focus)
+// @version      7.3.8
 // @description  Performance optimized
 // @author       Admin
 // @match        *://*/*
