@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Minimalist Focus (v7.3.0 - Optimized)
-// @version      7.3.0
+// @name         Minimalist Focus (v7.3.1 - Optimized)
+// @version      7.3.1
 // @description  Performance optimized
 // @author       Admin
 // @match         *://*/*
@@ -29,7 +29,7 @@
         for (let el of candidates) {
             const rect = el.getBoundingClientRect();
 
-            const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+            const isVisible = rect.width > 0 && rect.height > 0;
             const isLargeEnough = (el.tagName === 'VIDEO' ? rect.height > 100 : rect.width > 400);
             const style = window.getComputedStyle(el);
             const isNotHidden = style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
@@ -137,6 +137,11 @@
 
         const target = findVideoNuclear();
         if (target) injectButton(target);
+
+        if (!target) {
+        clearTimeout(window.retryTimer);
+        window.retryTimer = setTimeout(handleMutation, 2000);
+        }
     };
 
     observer = new MutationObserver(() => {
