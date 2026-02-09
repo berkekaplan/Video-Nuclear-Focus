@@ -5,6 +5,8 @@
 // @author       Admin
 // @match         *://*/*
 // @exclude       *://*.youtube.com/*
+// @exclude       *://*.google.com/*
+// @exclude       *://*.reddit.com/*
 // @grant        GM_openInTab
 // @run-at       document-start
 // @allFrames    true
