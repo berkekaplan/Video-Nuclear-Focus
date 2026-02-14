@@ -7,6 +7,7 @@
 // @exclude      *://*.youtube.com/*
 // @exclude      *://*.google.com/*
 // @exclude      *://*.reddit.com/*
+// @exclude      *://*.whatsapp.com/*
 // @grant        GM_openInTab
 // @run-at       document-start
 // @allFrames    true
