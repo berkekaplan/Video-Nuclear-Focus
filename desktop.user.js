@@ -18,8 +18,6 @@
     let currentSpeedIdx = 0;
     let debounceTimer = null;
     let observer = null;
-
-
     let searchTimeoutTimer = null;
 
     const cleanupButtons = () => {
@@ -169,7 +167,6 @@
             if (observer) {
                 observer.disconnect();
                 clearTimeout(window.retryTimer);
-                console.log('Minimalist Focus: 5 saniye doldu, kaynak tasarrufu için arama durduruldu.');
             }
         }, 5000);
 

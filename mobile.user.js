@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Minimalist Focus (v1.7.3 - Mobile)
-// @version      1.7.3
-// @description  Performance optimized
+// @name         Minimalist Focus (v1.7.4 - Mobile)
+// @version      1.7.4
+// @description  Performance optimized: Search stops after 5 seconds.
 // @author       Admin
 // @match         *://*/*
 // @exclude       *://*.youtube.com/*
@@ -17,8 +17,8 @@
     const SPEEDS = [1, 1.25, 1.5, 2, 0.5];
     let currentSpeedIdx = 0;
     let debounceTimer = null;
-
     let observer = null;
+    let searchTimeoutTimer = null;
 
     const cleanupButtons = () => {
         const host = document.getElementById('iso-portal-host');
@@ -97,6 +97,8 @@
 
             if (observer) observer.disconnect();
 
+            clearTimeout(searchTimeoutTimer);
+
             cleanupButtons();
             const originalSpeed = video.playbackRate;
 
@@ -165,4 +167,11 @@
         });
 
         handleMutation();
+
+        searchTimeoutTimer = setTimeout(() => {
+            if (observer) {
+                observer.disconnect();
+                clearTimeout(window.retryTimer);
+            }
+        }, 5000);
 })();
