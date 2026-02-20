@@ -8,6 +8,11 @@
 // @exclude      *://*.google.com/*
 // @exclude      *://*.reddit.com/*
 // @exclude      *://*.whatsapp.com/*
+// @exclude      *://*.discord.com/*
+// @exclude      *://*.duolingo.com/*
+// @exclude      *://*.samidy.com/*
+// @exclude      *://*.deepl.com/*
+// @exclude      *://*.freepik.com/*
 // @grant        GM_openInTab
 // @run-at       document-start
 // @allFrames    true

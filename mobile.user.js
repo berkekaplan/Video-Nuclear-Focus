@@ -4,10 +4,15 @@
 // @description  Performance optimized: Search stops after 5 seconds.
 // @author       Admin
 // @match         *://*/*
-// @exclude       *://*.youtube.com/*
-// @exclude       *://*.google.com/*
-// @exclude       *://*.reddit.com/*
+// @exclude      *://*.youtube.com/*
+// @exclude      *://*.google.com/*
+// @exclude      *://*.reddit.com/*
 // @exclude      *://*.whatsapp.com/*
+// @exclude      *://*.discord.com/*
+// @exclude      *://*.duolingo.com/*
+// @exclude      *://*.samidy.com/*
+// @exclude      *://*.deepl.com/*
+// @exclude      *://*.freepik.com/*
 // @grant        GM_openInTab
 // @run-at       document-start
 // @allFrames    true
