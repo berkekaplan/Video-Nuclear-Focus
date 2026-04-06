@@ -181,7 +181,7 @@
             body { background: #000 !important; }
             #p-wrap { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #000; }
             #p-controls { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 20px; z-index: 2147483647; }
-            video, canvas { max-width: 100% !important; max-height: calc(100vh - 160px) !important; width: auto !important; height: auto !important; object-fit: contain !important; outline: none !important; }
+            video, canvas { max-width: 100% !important; max-height: calc(100vh - 200px) !important; width: auto !important; height: auto !important; object-fit: contain !important; outline: none !important; }
             #s-ind { position: fixed; top: 20px; right: 20px; color: #888; font-family: monospace; cursor: pointer; z-index: 2147483647; font-size: 14px; transition: color 0.2s; }
             #s-ind:hover { color: #fff; }
             .ctrl-btn { all: unset; color: #fff; font-family: monospace; font-size: 12px; cursor: pointer; padding: 8px 12px; transition: background 0.2s; border-radius: 4px; }
