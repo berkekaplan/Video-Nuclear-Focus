@@ -290,6 +290,9 @@
         // Apply video styles
         video.style.cssText = 'max-width: 100% !important; max-height: calc(100vh - 180px) !important; width: 100% !important; height: auto !important; object-fit: contain !important;';
 
+        // Enable native controls
+        video.controls = true;
+
         // Speed change
         speedInd.onclick = () => {
             currentSpeedIdx = (currentSpeedIdx + 1) % SPEEDS.length;
