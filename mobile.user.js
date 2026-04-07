@@ -133,9 +133,6 @@
         document.body.replaceChildren();
         document.body.style.cssText = 'background: #000 !important; margin: 0 !important; overflow: hidden !important;';
 
-        // Hide native video controls
-        video.removeAttribute('controls');
-
         // Styles - Mobile minimalist
         const style = document.createElement('style');
         style.innerHTML = `
@@ -151,20 +148,6 @@
             #p-time { color: #fff; font-size: 11px; white-space: nowrap; }
             #s-ind { position: fixed; top: 15px; right: 15px; color: #fff; font-size: 12px; cursor: pointer; z-index: 2147483647; padding: 6px; }
             #fs-btn { position: fixed; top: 15px; left: 15px; z-index: 2147483647; }
-            video::-webkit-media-controls { display: none !important; }
-            video::-webkit-media-controls-enclosure { display: none !important; }
-            video::-webkit-media-controls-panel { display: none !important; }
-            video::-webkit-media-controls-overlay-enclosure { display: none !important; }
-            video::-moz-media-controls { display: none !important; }
-            video::-moz-media-controls-enclosure { display: none !important; }
-            video::-internal-media-controls-list-button { display: none !important; }
-            video::-internal-media-controls-overlay-cast-button { display: none !important; }
-            video::-webkit-media-controls-remote-cast-button { display: none !important; }
-            :fullscreen video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; max-width: 100vw !important; max-height: 100vh !important; }
-            :fullscreen #p-controls { display: flex !important; }
-            :fullscreen #s-ind, :fullscreen #fs-btn { font-size: 13px !important; padding: 8px !important; display: block !important; }
-            video > .fv-hide-controls { display: none !important; }
-            video::-webkit-media-controls-inline-video-picture-in-picture-button { display: none !important; }
         `;
         document.head.appendChild(style);
 
@@ -196,7 +179,7 @@
         speedInd.id = 's-ind';
         speedInd.innerText = originalSpeed + 'x';
 
-        // Fullscreen button - hides native controls when using our button
+        // Fullscreen button - keeps native controls working in normal mode
         const fsBtn = document.createElement('button');
         fsBtn.id = 'fs-btn';
         fsBtn.className = 'ctrl-btn';
@@ -204,11 +187,7 @@
         fsBtn.onclick = () => {
             if (document.fullscreenElement) {
                 document.exitFullscreen().catch(() => {});
-                // Restore native controls when exiting
-                video.controls = true;
             } else {
-                // Hide native controls only when using our button
-                video.removeAttribute('controls');
                 document.documentElement.requestFullscreen().catch(() => {});
             }
         };
