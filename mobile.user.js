@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Mobil Focus (v5.0 - Minimal)
-// @version      5.0
-// @description  Minimalist video player for mobile with PiP, volume, progress bar and swipe gestures
+// @name         Mobil Focus (v5.1 - Minimal)
+// @version      5.1
+// @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
 // @exclude      *://*.youtube.com/*
@@ -52,23 +52,27 @@
         host.id = 'iso-portal-host';
         host.style.cssText = `
             position: fixed !important;
-            top: 20px !important;
+            top: 15px !important;
             right: 10px !important;
             z-index: 2147483647 !important;
             display: flex !important;
-            background: rgba(0, 0, 0, 0.8) !important;
-            border-radius: 4px !important;
-            padding: 4px 8px !important;
+            background: rgba(0, 0, 0, 0.85) !important;
+            border-radius: 8px !important;
+            padding: 8px 12px !important;
         `;
 
         const btn = document.createElement('button');
-        btn.innerText = '▶';
+        btn.innerText = '▶ FOCUS';
         btn.style.cssText = `
             all: unset !important;
             color: #fff !important;
             font-size: 14px !important;
+            font-weight: 600 !important;
             cursor: pointer !important;
-            padding: 4px 8px !important;
+            padding: 10px 16px !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
+            text-align: center !important;
         `;
         btn.onclick = (e) => {
             e.preventDefault();
@@ -101,12 +105,12 @@
             video { max-width: 100% !important; max-height: calc(100vh - 180px) !important; width: 100% !important; height: auto !important; object-fit: contain !important; }
             .ctrl-btn { all: unset; color: #fff; font-size: 12px; cursor: pointer; padding: 6px 10px; }
             #v-slider { width: 60px; height: 3px; accent-color: #fff; }
-            #p-bar { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; }
+            #p-bar { width: 100%; min-height: 32px; display: flex; align-items: center; padding: 14px 0; }
+            #p-bar-inner { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; position: relative; }
             #p-fill { height: 100%; background: #fff; border-radius: 2px; width: 0; }
             #p-time { color: #888; font-size: 11px; }
-            #s-ind { position: fixed; top: 15px; right: 15px; color: #888; font-size: 12px; cursor: pointer; z-index: 2147483647; }
-            #pip-btn { position: fixed; top: 15px; left: 15px; z-index: 2147483647; }
-            #gesture-hint { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; font-size: 12px; pointer-events: none; z-index: 1; }
+            #s-ind { position: fixed; top: 15px; right: 15px; color: #888; font-size: 12px; cursor: pointer; z-index: 2147483647; padding: 8px; }
+            #fs-btn { position: fixed; top: 15px; left: 15px; z-index: 2147483647; }
         `;
         document.head.appendChild(style);
 
@@ -118,12 +122,15 @@
         const controls = document.createElement('div');
         controls.id = 'p-controls';
 
-        // Progress bar
+        // Progress bar (with larger touch area)
         const progressBar = document.createElement('div');
         progressBar.id = 'p-bar';
+        const progressBarInner = document.createElement('div');
+        progressBarInner.id = 'p-bar-inner';
         const progressFill = document.createElement('div');
         progressFill.id = 'p-fill';
-        progressBar.appendChild(progressFill);
+        progressBarInner.appendChild(progressFill);
+        progressBar.appendChild(progressBarInner);
 
         // Time display
         const timeDisplay = document.createElement('span');
@@ -135,16 +142,16 @@
         speedInd.id = 's-ind';
         speedInd.innerText = originalSpeed + 'x';
 
-        // PiP button
-        const pipBtn = document.createElement('button');
-        pipBtn.id = 'pip-btn';
-        pipBtn.className = 'ctrl-btn';
-        pipBtn.innerText = 'PiP';
-        pipBtn.onclick = () => {
-            if (document.pictureInPictureElement) {
-                document.exitPictureInPicture().catch(() => {});
-            } else if (video.requestPictureInPicture) {
-                video.requestPictureInPicture().catch(() => {});
+        // Fullscreen button
+        const fsBtn = document.createElement('button');
+        fsBtn.id = 'fs-btn';
+        fsBtn.className = 'ctrl-btn';
+        fsBtn.innerText = '⛶';
+        fsBtn.onclick = () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            } else {
+                document.documentElement.requestFullscreen().catch(() => {});
             }
         };
 
@@ -198,13 +205,13 @@
         // Controls row
         const controlsRow = document.createElement('div');
         controlsRow.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 8px;';
+        controlsRow.appendChild(fsBtn);
         controlsRow.appendChild(speedInd);
         controlsRow.appendChild(seekBackBtn);
         controlsRow.appendChild(playPauseBtn);
         controlsRow.appendChild(seekFwdBtn);
         controlsRow.appendChild(muteBtn);
         controlsRow.appendChild(volumeSlider);
-        controlsRow.appendChild(pipBtn);
 
         // Bottom row with time
         const bottomRow = document.createElement('div');
