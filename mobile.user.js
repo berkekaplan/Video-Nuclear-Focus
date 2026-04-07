@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Mobil Focus (v5.5 - Minimal)
-// @version      5.5
+// @name         Mobil Focus (v5.3 - Minimal)
+// @version      5.3
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -44,7 +44,7 @@
         return null;
     }
 
-    // Inject floating buttons
+    // Inject floating buttons with pinch-to-zoom
     function injectButton(video) {
         if (document.getElementById('iso-portal-host')) return;
 
@@ -52,35 +52,36 @@
 
         const host = document.createElement('div');
         host.id = 'iso-portal-host';
-        
+
+        let currentScale = 1;
+        let initialDistance = 0;
+        let initialScale = 1;
+
         host.style.cssText = `
-            position: fixed !important;
-            top: 80px !important;
-            right: 10px !important;
-            z-index: 2147483647 !important;
-            display: flex !important;
-            gap: 4px !important;
-            align-items: center !important;
+        position: fixed !important;
+        top: 15px !important;
+        right: 10px !important;
+        z-index: 2147483647 !important;
+        display: flex !important;
+        gap: 6px !important;
         `;
 
-        // Focus button (minimal)
+        // Focus button
         const focusBtn = document.createElement('button');
         focusBtn.className = 'iso-btn iso-focus';
-        focusBtn.innerText = '▶';
-        focusBtn.title = 'FOCUS';
+        focusBtn.innerText = '▶ FOCUS';
         focusBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
             launchFocus(video);
         };
 
-        // Extract button (only in iframe, minimal)
+        // Extract button (only in iframe)
         let extractBtn = null;
         if (isIframe) {
             extractBtn = document.createElement('button');
             extractBtn.className = 'iso-btn iso-extract';
-            extractBtn.innerText = '⬆';
-            extractBtn.title = 'EXTRACT';
+            extractBtn.innerText = '⬆ EXTRACT';
             extractBtn.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -94,34 +95,64 @@
             };
         }
 
-        // Apply minimal styles
+        // Apply base styles
         const style = document.createElement('style');
         style.id = 'iso-host-style';
         style.textContent = `
-            .iso-btn {
-                all: unset !important;
-                color: #fff !important;
-                font-size: 12px !important;
-                font-weight: 600 !important;
-                cursor: pointer !important;
-                padding: 4px 8px !important;
-                min-width: 28px !important;
-                min-height: 28px !important;
-                text-align: center !important;
-                background: rgba(0, 0, 0, 0.85) !important;
-                border-radius: 4px !important;
-            }
+        .iso-btn {
+            all: unset !important;
+            color: #fff !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            padding: 8px 12px !important;
+            min-width: 36px !important;
+            min-height: 36px !important;
+            text-align: center !important;
+            background: rgba(0, 0, 0, 0.85) !important;
+            border-radius: 6px !important;
+            transition: transform 0.1s ease !important;
+            transform-origin: center center !important;
+        }
         `;
         document.head.appendChild(style);
 
+        // Pinch-to-zoom handler
+        function getDistance(t1, t2) {
+            return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        }
+
+        host.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                initialDistance = getDistance(e.touches[0], e.touches[1]);
+                initialScale = currentScale;
+            }
+        }, { passive: true });
+
+        host.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                if (initialDistance > 0) {
+                    const scale = (currentDistance / initialDistance) * initialScale;
+                    currentScale = Math.max(0.5, Math.min(2, scale));
+                    focusBtn.style.transform = `scale(${currentScale})`;
+                    if (extractBtn) extractBtn.style.transform = `scale(${currentScale})`;
+                }
+            }
+        }, { passive: true });
+
+        host.addEventListener('touchend', (e) => {
+            initialDistance = 0;
+        }, { passive: true });
+
         // Add buttons in order
-        if (extractBtn) host.appendChild(extractBtn);
         host.appendChild(focusBtn);
-        
+        if (extractBtn) host.appendChild(extractBtn);
+
         (document.body || document.documentElement).appendChild(host);
     }
 
-    // Main focus mode - keeps native controls working
+    // Main focus mode
     function launchFocus(video) {
         if (document.getElementById('p-wrap')) return;
 
@@ -129,41 +160,48 @@
         const originalSpeed = video.playbackRate;
         const originalVolume = video.volume;
 
-        // Store original video parent and position
-        const originalParent = video.parentElement;
-        const originalNextSibling = video.nextSibling;
-
-        // Create focus overlay without replacing body
-        const wrap = document.createElement('div');
-        wrap.id = 'p-wrap';
-        wrap.style.cssText = 'position: fixed !important; inset: 0 !important; display: flex !important; justify-content: center !important; align-items: center !important; background: #000 !important; z-index: 2147483640 !important;';
+        // Replace body content
+        document.body.replaceChildren();
+        document.body.style.cssText = 'background: #000 !important; margin: 0 !important; overflow: hidden !important;';
 
         // Styles - Mobile minimalist
         const style = document.createElement('style');
         style.innerHTML = `
-            * { box-sizing: border-box; }
-            #p-wrap { pointer-events: auto !important; }
-            video { pointer-events: auto !important; }
-            #p-controls { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 2147483647; pointer-events: auto !important; }
-            .ctrl-btn { all: unset; color: #fff; font-size: 11px; cursor: pointer; padding: 6px 8px; white-space: nowrap; pointer-events: auto !important; }
-            #v-slider { width: 60px; height: 3px; accent-color: #fff; pointer-events: auto !important; }
-            #p-bar { width: 100%; min-height: 32px; display: flex; align-items: center; padding: 14px 0; pointer-events: auto !important; }
-            #p-bar-inner { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; position: relative; pointer-events: auto !important; }
-            #p-fill { height: 100%; background: #fff; border-radius: 2px; width: 0; pointer-events: auto !important; }
-            #p-time { color: #fff; font-size: 11px; white-space: nowrap; pointer-events: auto !important; }
-            #s-ind { position: fixed; top: 15px; right: 15px; color: #fff; font-size: 12px; cursor: pointer; z-index: 2147483647; padding: 6px; }
-            #fs-btn { position: fixed; top: 15px; left: 15px; z-index: 2147483647; }
-            :fullscreen #p-wrap { position: fixed !important; inset: 0 !important; background: #000 !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; }
-            :fullscreen video { max-width: 100vw !important; max-height: 100vh !important; width: auto !important; height: auto !important; object-fit: contain !important; aspect-ratio: auto !important; order: 1 !important; }
-            :fullscreen #p-controls { position: relative !important; bottom: auto !important; left: auto !important; right: auto !important; order: 2 !important; }
+        * { box-sizing: border-box; }
+        #p-wrap { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #000; }
+        #p-controls { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 2147483647; }
+        video { max-width: 100% !important; max-height: calc(100vh - 180px) !important; width: 100% !important; height: auto !important; object-fit: contain !important; }
+        .ctrl-btn { all: unset; color: #fff; font-size: 12px; cursor: pointer; padding: 6px 10px; }
+        #v-slider { width: 60px; height: 3px; accent-color: #fff; }
+        #p-bar { width: 100%; min-height: 32px; display: flex; align-items: center; padding: 14px 0; }
+        #p-bar-inner { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; position: relative; }
+        #p-fill { height: 100%; background: #fff; border-radius: 2px; width: 0; }
+        #p-time { color: #fff; font-size: 11px; }
+        #s-ind { position: fixed; top: 15px; right: 15px; color: #fff; font-size: 12px; cursor: pointer; z-index: 2147483647; padding: 8px; }
+        #fs-btn { position: fixed; top: 15px; left: 15px; z-index: 2147483647; }
+        video::-webkit-media-controls { display: none !important; }
+        video::-webkit-media-controls-enclosure { display: none !important; }
+        video::-webkit-media-controls-panel { display: none !important; }
+        video::-webkit-media-controls-overlay-enclosure { display: none !important; }
+        video::-moz-media-controls { display: none !important; }
+        video::-moz-media-controls-enclosure { display: none !important; }
+        :fullscreen video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; max-width: 100vw !important; max-height: 100vh !important; }
+        :fullscreen #p-controls { display: flex !important; }
+        :fullscreen #s-ind, :fullscreen #fs-btn { font-size: 14px !important; padding: 10px !important; display: block !important; }
+        video::-internal-media-controls-overlay-cast-button { display: none !important; }
+        video::-webkit-media-controls-remote-cast-button { display: none !important; }
         `;
         document.head.appendChild(style);
 
-        // Controls container
+        // Wrap container
+        const wrap = document.createElement('div');
+        wrap.id = 'p-wrap';
+
+        // Controls
         const controls = document.createElement('div');
         controls.id = 'p-controls';
 
-        // Progress bar
+        // Progress bar (with larger touch area)
         const progressBar = document.createElement('div');
         progressBar.id = 'p-bar';
         const progressBarInner = document.createElement('div');
@@ -221,13 +259,13 @@
         seekFwdBtn.innerText = '+' + SEEK_STEP;
         seekFwdBtn.onclick = () => { video.currentTime = Math.min(video.duration, video.currentTime + SEEK_STEP); };
 
-        // Mute button with text
+        // Volume
         const muteBtn = document.createElement('button');
         muteBtn.className = 'ctrl-btn';
-        muteBtn.innerText = 'MUTE';
+        muteBtn.innerText = '🔊';
         muteBtn.onclick = () => {
             video.muted = !video.muted;
-            muteBtn.innerText = video.muted ? 'UNMUTE' : 'MUTE';
+            muteBtn.innerText = video.muted ? '🔇' : '🔊';
         };
 
         const volumeSlider = document.createElement('input');
@@ -240,34 +278,12 @@
         volumeSlider.oninput = (e) => {
             video.volume = parseFloat(e.target.value);
             video.muted = false;
-            muteBtn.innerText = 'MUTE';
-        };
-
-        // Exit button
-        const exitBtn = document.createElement('button');
-        exitBtn.className = 'ctrl-btn';
-        exitBtn.innerText = '✕';
-        exitBtn.style.cssText = 'all: unset; color: #fff; font-size: 14px; cursor: pointer; padding: 6px 10px; pointer-events: auto !important;';
-        exitBtn.onclick = () => {
-            // Restore video to original position
-            if (originalParent) {
-                if (originalNextSibling) {
-                    originalParent.insertBefore(video, originalNextSibling);
-                } else {
-                    originalParent.appendChild(video);
-                }
-            }
-            // Remove overlay
-            wrap.remove();
-            controls.remove();
-            style.remove();
-            video.style.cssText = '';
+            muteBtn.innerText = video.volume === 0 ? '🔇' : '🔊';
         };
 
         // Controls row
         const controlsRow = document.createElement('div');
-        controlsRow.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 6px;';
-        controlsRow.appendChild(exitBtn);
+        controlsRow.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 8px;';
         controlsRow.appendChild(fsBtn);
         controlsRow.appendChild(speedInd);
         controlsRow.appendChild(seekBackBtn);
@@ -285,16 +301,9 @@
         controls.appendChild(bottomRow);
         controls.appendChild(controlsRow);
 
-        // Add overlay and move video
         document.body.appendChild(wrap);
         document.body.appendChild(controls);
         wrap.appendChild(video);
-
-        // Apply video styles
-        video.style.cssText = 'max-width: 100% !important; max-height: calc(100vh - 180px) !important; width: 100% !important; height: auto !important; object-fit: contain !important;';
-
-        // Enable native controls
-        video.controls = true;
 
         // Speed change
         speedInd.onclick = () => {
@@ -357,7 +366,8 @@
             if (e.key === 'Escape') location.reload();
         };
 
-        video.play().catch(() => {});
+            video.controls = true;
+            video.play().catch(() => {});
     }
 
     // Mutation handler
