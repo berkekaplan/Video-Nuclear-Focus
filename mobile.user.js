@@ -154,7 +154,7 @@
             #s-ind { position: fixed; top: 15px; right: 15px; color: #fff; font-size: 12px; cursor: pointer; z-index: 2147483647; padding: 6px; }
             #fs-btn { position: fixed; top: 15px; left: 15px; z-index: 2147483647; }
             :fullscreen #p-wrap { position: fixed !important; inset: 0 !important; background: #000 !important; }
-            :fullscreen video { max-width: 100vw !important; max-height: 100vh !important; width: auto !important; height: auto !important; object-fit: contain !important; }
+            :fullscreen video { max-width: 100vw !important; max-height: 100vh !important; width: auto !important; height: auto !important; object-fit: contain !important; aspect-ratio: auto !important; }
         `;
         document.head.appendChild(style);
 
