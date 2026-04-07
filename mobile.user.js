@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Mobil Focus (v5.4 - Minimal)
-// @version      5.4
+// @name         Mobil Focus (v5.5 - Minimal)
+// @version      5.5
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -25,11 +25,17 @@
     // ========== STATE ==========
     let state = {
         currentSpeedIdx: 0,
-        videoFound: false
+        videoFound: false,
+        // Pinch-to-zoom state
+        currentScale: 1,
+        initialDistance: 0,
+        initialScale: 1
     };
 
     let observer = null;
     let retryTimerId = null;
+    let touchListeners = null;
+    let injectButtonStyleAdded = false;
 
     // ========== CLEANUP ==========
     const cleanup = () => {
@@ -44,6 +50,23 @@
         if (retryTimerId) {
             clearTimeout(retryTimerId);
             retryTimerId = null;
+        }
+        
+        // Reset pinch-to-zoom state
+        state.currentScale = 1;
+        state.initialDistance = 0;
+        state.initialScale = 1;
+    };
+
+    // ========== FOCUS MODE CLEANUP ==========
+    let focusWrap = null;
+    const cleanupFocusMode = () => {
+        if (focusWrap && touchListeners) {
+            focusWrap.removeEventListener('touchstart', touchListeners.onTouchStart);
+            focusWrap.removeEventListener('touchmove', touchListeners.onTouchMove);
+            focusWrap.removeEventListener('touchend', touchListeners.onTouchEnd);
+            touchListeners = null;
+            focusWrap = null;
         }
     };
 
@@ -76,10 +99,6 @@
 
         const host = document.createElement('div');
         host.id = 'iso-portal-host';
-
-        let currentScale = 1;
-        let initialDistance = 0;
-        let initialScale = 1;
 
         host.style.cssText = `
             position: fixed !important;
@@ -119,27 +138,30 @@
             });
         }
 
-        // Apply base styles
-        const style = document.createElement('style');
-        style.id = 'iso-host-style';
-        style.textContent = `
-            .iso-btn {
-                all: unset !important;
-                color: #fff !important;
-                font-size: 12px !important;
-                font-weight: 600 !important;
-                cursor: pointer !important;
-                padding: 8px 12px !important;
-                min-width: 36px !important;
-                min-height: 36px !important;
-                text-align: center !important;
-                background: rgba(0, 0, 0, 0.85) !important;
-                border-radius: 6px !important;
-                transition: transform 0.1s ease !important;
-                transform-origin: center center !important;
-            }
-        `;
-        document.head.appendChild(style);
+        // Apply base styles (only once)
+        if (!injectButtonStyleAdded) {
+            const style = document.createElement('style');
+            style.id = 'iso-host-style';
+            style.textContent = `
+                .iso-btn {
+                    all: unset !important;
+                    color: #fff !important;
+                    font-size: 12px !important;
+                    font-weight: 600 !important;
+                    cursor: pointer !important;
+                    padding: 8px 12px !important;
+                    min-width: 36px !important;
+                    min-height: 36px !important;
+                    text-align: center !important;
+                    background: rgba(0, 0, 0, 0.85) !important;
+                    border-radius: 6px !important;
+                    transition: transform 0.1s ease !important;
+                    transform-origin: center center !important;
+                }
+            `;
+            document.head.appendChild(style);
+            injectButtonStyleAdded = true;
+        }
 
         // Pinch-to-zoom handler
         const getDistance = (t1, t2) => {
@@ -148,25 +170,25 @@
 
         host.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
-                initialDistance = getDistance(e.touches[0], e.touches[1]);
-                initialScale = currentScale;
+                state.initialDistance = getDistance(e.touches[0], e.touches[1]);
+                state.initialScale = state.currentScale;
             }
         }, { passive: true });
 
         host.addEventListener('touchmove', (e) => {
             if (e.touches.length === 2) {
                 const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                if (initialDistance > 0) {
-                    const scale = (currentDistance / initialDistance) * initialScale;
-                    currentScale = Math.max(0.5, Math.min(2, scale));
-                    focusBtn.style.transform = `scale(${currentScale})`;
-                    if (extractBtn) extractBtn.style.transform = `scale(${currentScale})`;
+                if (state.initialDistance > 0) {
+                    const scale = (currentDistance / state.initialDistance) * state.initialScale;
+                    state.currentScale = Math.max(0.5, Math.min(2, scale));
+                    focusBtn.style.transform = `scale(${state.currentScale})`;
+                    if (extractBtn) extractBtn.style.transform = `scale(${state.currentScale})`;
                 }
             }
         }, { passive: true });
 
         host.addEventListener('touchend', () => {
-            initialDistance = 0;
+            state.initialDistance = 0;
         }, { passive: true });
 
         // Add buttons in order
@@ -182,6 +204,9 @@
 
         const originalSpeed = video.playbackRate;
         const originalVolume = video.volume;
+
+        // Cleanup previous focus mode
+        cleanupFocusMode();
 
         // Aggressive cleanup - destroy everything
         document.body.replaceChildren();
@@ -363,18 +388,18 @@
             timeDisplay.innerText = `${currMin}:${currSec.toString().padStart(2, '0')} / ${durMin}:${durSec.toString().padStart(2, '0')}`;
         });
 
-        // Touch gestures for seek
+        // Touch gestures for seek - stored for cleanup
         let touchStartX = 0;
         let touchStartTime = 0;
         let isSwiping = false;
 
-        wrap.addEventListener('touchstart', (e) => {
+        const onTouchStart = (e) => {
             touchStartX = e.touches[0].clientX;
             touchStartTime = video.currentTime;
             isSwiping = false;
-        }, { passive: true });
+        };
 
-        wrap.addEventListener('touchmove', (e) => {
+        const onTouchMove = (e) => {
             const deltaX = e.touches[0].clientX - touchStartX;
             if (Math.abs(deltaX) > 50 && !isSwiping) {
                 isSwiping = true;
@@ -386,11 +411,18 @@
                 const percent = (video.currentTime / video.duration) * 100;
                 progressFill.style.width = `${percent}%`;
             }
-        }, { passive: false });
+        };
 
-        wrap.addEventListener('touchend', () => {
+        const onTouchEnd = () => {
             isSwiping = false;
-        }, { passive: true });
+        };
+
+        touchListeners = { onTouchStart, onTouchMove, onTouchEnd };
+        focusWrap = wrap;
+
+        wrap.addEventListener('touchstart', onTouchStart, { passive: true });
+        wrap.addEventListener('touchmove', onTouchMove, { passive: false });
+        wrap.addEventListener('touchend', onTouchEnd, { passive: true });
 
         // Keyboard shortcuts (Escape only for mobile)
         window.addEventListener('keydown', (e) => {
@@ -428,5 +460,8 @@
 
     handleMutation();
 
-    window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('beforeunload', () => {
+        cleanupFocusMode();
+        cleanup();
+    });
 })();
