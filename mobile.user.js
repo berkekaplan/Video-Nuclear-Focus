@@ -67,33 +67,33 @@
 
         const isIframe = (window.self !== window.top);
 
-        // Toggle button
+        // Toggle button - smaller for mobile
         const toggle = document.createElement('div');
         toggle.id = 'iso-portal-toggle';
         toggle.innerHTML = '&#9654;';
         toggle.style.cssText = `
-            padding: 8px 10px !important;
+            padding: 4px 6px !important;
             color: #fff !important;
             cursor: pointer !important;
             font-family: monospace !important;
-            font-size: 14px !important;
+            font-size: 11px !important;
             border-right: 1px solid #555 !important;
             user-select: none !important;
         `;
 
-        // Main button
+        // Main button - smaller for mobile (24px minimum for touch)
         const btn = document.createElement('button');
-        btn.innerText = isIframe ? 'EXTRACT' : 'FOCUS';
+        btn.innerText = isIframe ? 'EXT' : 'FOC';
         btn.style.cssText = `
             all: unset !important;
-            padding: 10px 14px !important;
+            padding: 4px 8px !important;
             color: #fff !important;
             cursor: pointer !important;
             font-family: monospace !important;
-            font-size: 14px !important;
+            font-size: 11px !important;
             white-space: nowrap !important;
-            min-width: 44px !important;
-            min-height: 44px !important;
+            min-width: 24px !important;
+            min-height: 24px !important;
         `;
 
         let isOpen = true;
@@ -124,20 +124,19 @@
         (document.body || document.documentElement).appendChild(host);
     }
 
-    // Main focus mode - optimized for mobile
+    // Main focus mode - only speed control, keep native player
     function launchFocus(video) {
         if (document.getElementById('p-wrap')) return;
 
         cleanup();
 
         const originalSpeed = video.playbackRate;
-        const originalVolume = video.volume;
 
         // Replace body content
         document.body.replaceChildren();
         document.body.style.cssText = 'background: #000 !important; margin: 0 !important; overflow: hidden !important; width: 100vw; height: 100vh;';
 
-        // Styles - mobile optimized with fullscreen video and bottom controls
+        // Styles - only speed control overlay
         const style = document.createElement('style');
         style.textContent = `
             html { background: #000 !important; }
@@ -156,59 +155,25 @@
                 object-fit: contain !important; 
                 outline: none !important;
             }
-            #p-controls { 
+            /* Keep native controls visible */
+            video::-webkit-media-controls { display: flex !important; }
+            video::-webkit-media-controls-overlay-enclosure { display: flex !important; }
+            video::-webkit-media-controls-enclosure { display: flex !important; }
+            #s-btn { 
                 position: fixed; 
-                bottom: 0; 
-                left: 0; 
-                right: 0; 
-                background: linear-gradient(transparent, rgba(0,0,0,0.9)); 
-                padding: 40px 10px 20px; 
-                z-index: 2147483647; 
-            }
-            #s-ind { 
-                position: fixed; 
-                top: 20px; 
-                right: 20px; 
-                color: #888; 
-                font-family: monospace; 
-                cursor: pointer; 
-                z-index: 2147483647; 
-                font-size: 14px; 
-                background: rgba(0,0,0,0.5);
-                padding: 4px 8px;
-                border-radius: 4px;
-            }
-            .ctrl-btn { 
-                all: unset; 
+                top: 10px; 
+                right: 10px; 
                 color: #fff; 
                 font-family: monospace; 
-                font-size: 14px; 
                 cursor: pointer; 
-                padding: 10px 12px; 
-                border-radius: 4px; 
-                min-width: 44px;
-                min-height: 44px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            .ctrl-btn:active { background: rgba(255,255,255,0.3); }
-            #v-slider { width: 80px; height: 4px; cursor: pointer; accent-color: #fff; margin: 0 8px; }
-            #p-bar { 
-                position: fixed; 
-                bottom: 90px; 
-                left: 10px; 
-                right: 10px; 
-                height: 4px; 
-                background: rgba(255,255,255,0.3); 
-                cursor: pointer; 
-                border-radius: 2px; 
                 z-index: 2147483647; 
+                font-size: 13px; 
+                background: rgba(0,0,0,0.7);
+                padding: 6px 10px;
+                border-radius: 4px;
+                border: 1px solid rgba(255,255,255,0.3);
             }
-            #p-fill { height: 100%; background: #fff; border-radius: 2px; width: 0; transition: width 0.1s linear; }
-            #p-time { color: #888; font-family: monospace; font-size: 12px; margin-left: 10px; }
-            .kbd { font-size: 10px; color: #666; margin-left: 4px; }
-            #pip-btn { margin-left: 10px; }
+            #s-btn:active { background: rgba(255,255,255,0.2); }
         `;
         document.head.appendChild(style);
 
@@ -216,203 +181,29 @@
         const wrap = document.createElement('div');
         wrap.id = 'p-wrap';
 
-        // Set video to fullscreen
+        // Keep video native controls - do NOT remove controls attribute
         video.id = 'p-video';
         video.style.cssText = 'width: 100vw !important; height: 100vh !important; object-fit: contain !important;';
-        video.removeAttribute('controls');
 
-        // Controls container
-        const controls = document.createElement('div');
-        controls.id = 'p-controls';
-
-        // Progress bar
-        const progressBar = document.createElement('div');
-        progressBar.id = 'p-bar';
-        const progressFill = document.createElement('div');
-        progressFill.id = 'p-fill';
-        progressBar.appendChild(progressFill);
-
-        // Progress time
-        const timeDisplay = document.createElement('span');
-        timeDisplay.id = 'p-time';
-        timeDisplay.innerText = '0:00 / 0:00';
-
-        // Speed indicator
-        const speedInd = document.createElement('div');
-        speedInd.id = 's-ind';
-        speedInd.innerHTML = `${originalSpeed}X`;
-
-        // PiP button
-        const pipBtn = document.createElement('button');
-        pipBtn.id = 'pip-btn';
-        pipBtn.className = 'ctrl-btn';
-        pipBtn.innerHTML = 'PiP';
-
-        const pipSupported = document.pictureInPictureEnabled && video.requestPictureInPicture;
-        if (!pipSupported) {
-            pipBtn.style.display = 'none';
-        } else {
-            pipBtn.onclick = async () => {
-                try {
-                    if (document.pictureInPictureElement) {
-                        await document.exitPictureInPicture();
-                    } else {
-                        await video.requestPictureInPicture();
-                    }
-                } catch (err) {
-                    console.log('PiP error:', err);
-                }
-            };
-        }
-
-        // Control buttons - mobile friendly
-        const btnContainer = document.createElement('div');
-        btnContainer.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;';
-
-        const playPauseBtn = document.createElement('button');
-        playPauseBtn.className = 'ctrl-btn';
-        playPauseBtn.innerHTML = '&#10074;&#10074;';
-        playPauseBtn.onclick = () => {
-            if (video.paused) {
-                video.play();
-                playPauseBtn.innerHTML = '&#10074;&#10074;';
-            } else {
-                video.pause();
-                playPauseBtn.innerHTML = '&#9654;';
-            }
-        };
-
-        const seekBackBtn = document.createElement('button');
-        seekBackBtn.className = 'ctrl-btn';
-        seekBackBtn.innerHTML = `-${SEEK_STEP}`;
-        seekBackBtn.onclick = () => { video.currentTime = Math.max(0, video.currentTime - SEEK_STEP); };
-
-        const seekFwdBtn = document.createElement('button');
-        seekFwdBtn.className = 'ctrl-btn';
-        seekFwdBtn.innerHTML = `+${SEEK_STEP}`;
-        seekFwdBtn.onclick = () => { video.currentTime = Math.min(video.duration, video.currentTime + SEEK_STEP); };
-
-        const volumeSlider = document.createElement('input');
-        volumeSlider.id = 'v-slider';
-        volumeSlider.type = 'range';
-        volumeSlider.min = '0';
-        volumeSlider.max = '1';
-        volumeSlider.step = '0.05';
-        volumeSlider.value = originalVolume;
-        volumeSlider.oninput = (e) => {
-            video.volume = parseFloat(e.target.value);
-            video.muted = false;
-        };
-
-        const muteBtn = document.createElement('button');
-        muteBtn.className = 'ctrl-btn';
-        muteBtn.innerHTML = '&#9834;';
-        muteBtn.onclick = () => {
-            video.muted = !video.muted;
-            muteBtn.innerHTML = video.muted ? '&#9835;' : '&#9834;';
-        };
-
-        const fullscreenBtn = document.createElement('button');
-        fullscreenBtn.className = 'ctrl-btn';
-        fullscreenBtn.innerHTML = '&#9974;';
-        fullscreenBtn.onclick = async () => {
-            try {
-                if (document.fullscreenElement) {
-                    await document.exitFullscreen();
-                } else {
-                    await document.documentElement.requestFullscreen();
-                }
-            } catch (err) {
-                console.log('Fullscreen error:', err);
-            }
-        };
-
-        // Speed controls
-        const speedBtn = document.createElement('button');
-        speedBtn.className = 'ctrl-btn';
-        speedBtn.innerHTML = `${SPEEDS[0]}X`;
+        // Speed control button only
+        const speedBtn = document.createElement('div');
+        speedBtn.id = 's-btn';
+        speedBtn.innerHTML = `${originalSpeed}X`;
         speedBtn.onclick = () => {
             currentSpeedIdx = (currentSpeedIdx + 1) % SPEEDS.length;
             video.playbackRate = SPEEDS[currentSpeedIdx];
             speedBtn.innerHTML = `${SPEEDS[currentSpeedIdx]}X`;
-            speedInd.innerHTML = `${SPEEDS[currentSpeedIdx]}X`;
         };
-
-        btnContainer.appendChild(playPauseBtn);
-        btnContainer.appendChild(seekBackBtn);
-        btnContainer.appendChild(seekFwdBtn);
-        btnContainer.appendChild(muteBtn);
-        btnContainer.appendChild(volumeSlider);
-        btnContainer.appendChild(speedBtn);
-        btnContainer.appendChild(pipBtn);
-        btnContainer.appendChild(fullscreenBtn);
-
-        controls.appendChild(progressBar);
-        controls.appendChild(timeDisplay);
-        controls.appendChild(btnContainer);
 
         // Append elements
         document.body.appendChild(wrap);
-        document.body.appendChild(controls);
-        document.body.appendChild(speedInd);
+        document.body.appendChild(speedBtn);
         wrap.appendChild(video);
-
-        // Progress bar interaction
-        progressBar.onclick = (e) => {
-            const rect = progressBar.getBoundingClientRect();
-            const percent = (e.clientX - rect.left) / rect.width;
-            video.currentTime = percent * video.duration;
-        };
-
-        // Update progress - using addEventListener instead of ontimeupdate
-        const updateProgress = () => {
-            if (video.duration) {
-                const percent = (video.currentTime / video.duration) * 100;
-                progressFill.style.width = percent + '%';
-                const currMin = Math.floor(video.currentTime / 60);
-                const currSec = Math.floor(video.currentTime % 60);
-                const durMin = Math.floor(video.duration / 60);
-                const durSec = Math.floor(video.duration % 60);
-                timeDisplay.innerText = `${currMin}:${currSec.toString().padStart(2, '0')} / ${durMin}:${durSec.toString().padStart(2, '0')}`;
-            }
-            requestAnimationFrame(updateProgress);
-        };
-        requestAnimationFrame(updateProgress);
-
-        // Play/Pause state sync
-        video.onplay = () => { playPauseBtn.innerHTML = '&#10074;&#10074;'; };
-        video.onpause = () => { playPauseBtn.innerHTML = '&#9654;'; };
 
         // Escape on mobile
         window.onkeydown = (e) => {
             if (e.key === 'Escape') location.reload();
         };
-
-        // Try to play, show tap message if autoplay blocked
-        video.play().catch(() => {
-            const tapMsg = document.createElement('div');
-            tapMsg.innerText = '▶ Oynatmak için tıkla';
-            tapMsg.style.cssText = `
-                position: fixed;
-                bottom: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0,0,0,0.8);
-                color: white;
-                padding: 16px 24px;
-                border-radius: 30px;
-                font-family: monospace;
-                font-size: 18px;
-                z-index: 2147483647;
-                cursor: pointer;
-            `;
-            document.body.appendChild(tapMsg);
-            tapMsg.onclick = () => {
-                video.play();
-                tapMsg.remove();
-            };
-            setTimeout(() => tapMsg.remove(), 10000);
-        });
     }
 
     // Mutation handler
