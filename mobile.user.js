@@ -55,7 +55,7 @@
         
         host.style.cssText = `
             position: fixed !important;
-            top: 15px !important;
+            top: 80px !important;
             right: 10px !important;
             z-index: 2147483647 !important;
             display: flex !important;
@@ -196,7 +196,7 @@
         speedInd.id = 's-ind';
         speedInd.innerText = originalSpeed + 'x';
 
-        // Fullscreen button
+        // Fullscreen button - hides native controls when using our button
         const fsBtn = document.createElement('button');
         fsBtn.id = 'fs-btn';
         fsBtn.className = 'ctrl-btn';
@@ -204,13 +204,12 @@
         fsBtn.onclick = () => {
             if (document.fullscreenElement) {
                 document.exitFullscreen().catch(() => {});
+                // Restore native controls when exiting
+                video.controls = true;
             } else {
-                // Hide native controls before entering fullscreen
-                video.style.display = 'none';
-                setTimeout(() => {
-                    video.style.display = '';
-                    document.documentElement.requestFullscreen().catch(() => {});
-                }, 50);
+                // Hide native controls only when using our button
+                video.removeAttribute('controls');
+                document.documentElement.requestFullscreen().catch(() => {});
             }
         };
 
