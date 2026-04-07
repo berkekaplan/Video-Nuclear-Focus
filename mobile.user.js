@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Mobil Focus (v5.1 - Minimal)
-// @version      5.1
+// @name         Mobil Focus (v5.2 - Minimal)
+// @version      5.2
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -111,6 +111,17 @@
             #p-time { color: #888; font-size: 11px; }
             #s-ind { position: fixed; top: 15px; right: 15px; color: #888; font-size: 12px; cursor: pointer; z-index: 2147483647; padding: 8px; }
             #fs-btn { position: fixed; top: 15px; left: 15px; z-index: 2147483647; }
+            video::-webkit-media-controls { display: none !important; }
+            video::-webkit-media-controls-enclosure { display: none !important; }
+            video::-webkit-media-controls-panel { display: none !important; }
+            video::-webkit-media-controls-overlay-enclosure { display: none !important; }
+            video::-moz-media-controls { display: none !important; }
+            video::-moz-media-controls-enclosure { display: none !important; }
+            :fullscreen video { object-fit: cover !important; width: 100vw !important; height: 100vh !important; max-width: 100vw !important; max-height: 100vh !important; }
+            :fullscreen #p-controls { background: linear-gradient(transparent, rgba(0,0,0,0.9)) !important; display: flex !important; }
+            :fullscreen #s-ind, :fullscreen #fs-btn { font-size: 14px !important; padding: 10px !important; display: block !important; }
+            video::-internal-media-controls-overlay-cast-button { display: none !important; }
+            video::-webkit-media-controls-remote-cast-button { display: none !important; }
         `;
         document.head.appendChild(style);
 
