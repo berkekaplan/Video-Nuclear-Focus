@@ -121,7 +121,7 @@
         (document.body || document.documentElement).appendChild(host);
     }
 
-    // Main focus mode
+    // Main focus mode - keeps native controls working
     function launchFocus(video) {
         if (document.getElementById('p-wrap')) return;
 
@@ -129,37 +129,38 @@
         const originalSpeed = video.playbackRate;
         const originalVolume = video.volume;
 
-        // Replace body content
-        document.body.replaceChildren();
-        document.body.style.cssText = 'background: #000 !important; margin: 0 !important; overflow: hidden !important;';
+        // Store original video parent and position
+        const originalParent = video.parentElement;
+        const originalNextSibling = video.nextSibling;
+
+        // Create focus overlay without replacing body
+        const wrap = document.createElement('div');
+        wrap.id = 'p-wrap';
+        wrap.style.cssText = 'position: fixed !important; inset: 0 !important; display: flex !important; justify-content: center !important; align-items: center !important; background: #000 !important; z-index: 2147483640 !important;';
 
         // Styles - Mobile minimalist
         const style = document.createElement('style');
         style.innerHTML = `
             * { box-sizing: border-box; }
-            #p-wrap { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #000; }
-            #p-controls { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 2147483647; }
-            video { max-width: 100% !important; max-height: calc(100vh - 180px) !important; width: 100% !important; height: auto !important; object-fit: contain !important; }
-            .ctrl-btn { all: unset; color: #fff; font-size: 11px; cursor: pointer; padding: 6px 8px; white-space: nowrap; }
-            #v-slider { width: 60px; height: 3px; accent-color: #fff; }
-            #p-bar { width: 100%; min-height: 32px; display: flex; align-items: center; padding: 14px 0; }
-            #p-bar-inner { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; position: relative; }
-            #p-fill { height: 100%; background: #fff; border-radius: 2px; width: 0; }
-            #p-time { color: #fff; font-size: 11px; white-space: nowrap; }
+            #p-wrap { pointer-events: auto !important; }
+            video { pointer-events: auto !important; }
+            #p-controls { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 2147483647; pointer-events: auto !important; }
+            .ctrl-btn { all: unset; color: #fff; font-size: 11px; cursor: pointer; padding: 6px 8px; white-space: nowrap; pointer-events: auto !important; }
+            #v-slider { width: 60px; height: 3px; accent-color: #fff; pointer-events: auto !important; }
+            #p-bar { width: 100%; min-height: 32px; display: flex; align-items: center; padding: 14px 0; pointer-events: auto !important; }
+            #p-bar-inner { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; position: relative; pointer-events: auto !important; }
+            #p-fill { height: 100%; background: #fff; border-radius: 2px; width: 0; pointer-events: auto !important; }
+            #p-time { color: #fff; font-size: 11px; white-space: nowrap; pointer-events: auto !important; }
             #s-ind { position: fixed; top: 15px; right: 15px; color: #fff; font-size: 12px; cursor: pointer; z-index: 2147483647; padding: 6px; }
             #fs-btn { position: fixed; top: 15px; left: 15px; z-index: 2147483647; }
         `;
         document.head.appendChild(style);
 
-        // Wrap container
-        const wrap = document.createElement('div');
-        wrap.id = 'p-wrap';
-
-        // Controls
+        // Controls container
         const controls = document.createElement('div');
         controls.id = 'p-controls';
 
-        // Progress bar (with larger touch area)
+        // Progress bar
         const progressBar = document.createElement('div');
         progressBar.id = 'p-bar';
         const progressBarInner = document.createElement('div');
@@ -179,7 +180,7 @@
         speedInd.id = 's-ind';
         speedInd.innerText = originalSpeed + 'x';
 
-        // Fullscreen button - keeps native controls working in normal mode
+        // Fullscreen button
         const fsBtn = document.createElement('button');
         fsBtn.id = 'fs-btn';
         fsBtn.className = 'ctrl-btn';
@@ -239,9 +240,31 @@
             muteBtn.innerText = 'MUTE';
         };
 
+        // Exit button
+        const exitBtn = document.createElement('button');
+        exitBtn.className = 'ctrl-btn';
+        exitBtn.innerText = '✕';
+        exitBtn.style.cssText = 'all: unset; color: #fff; font-size: 14px; cursor: pointer; padding: 6px 10px; pointer-events: auto !important;';
+        exitBtn.onclick = () => {
+            // Restore video to original position
+            if (originalParent) {
+                if (originalNextSibling) {
+                    originalParent.insertBefore(video, originalNextSibling);
+                } else {
+                    originalParent.appendChild(video);
+                }
+            }
+            // Remove overlay
+            wrap.remove();
+            controls.remove();
+            style.remove();
+            video.style.cssText = '';
+        };
+
         // Controls row
         const controlsRow = document.createElement('div');
         controlsRow.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 6px;';
+        controlsRow.appendChild(exitBtn);
         controlsRow.appendChild(fsBtn);
         controlsRow.appendChild(speedInd);
         controlsRow.appendChild(seekBackBtn);
@@ -259,9 +282,13 @@
         controls.appendChild(bottomRow);
         controls.appendChild(controlsRow);
 
+        // Add overlay and move video
         document.body.appendChild(wrap);
         document.body.appendChild(controls);
         wrap.appendChild(video);
+
+        // Apply video styles
+        video.style.cssText = 'max-width: 100% !important; max-height: calc(100vh - 180px) !important; width: 100% !important; height: auto !important; object-fit: contain !important;';
 
         // Speed change
         speedInd.onclick = () => {
