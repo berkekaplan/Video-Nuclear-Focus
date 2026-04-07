@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Mobil Focus (v5.4 - Minimal)
-// @version      5.4
+// @name         Mobil Focus (v5.5 - Minimal)
+// @version      5.5
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -44,7 +44,7 @@
         return null;
     }
 
-    // Inject floating buttons with size toggle
+    // Inject floating buttons
     function injectButton(video) {
         if (document.getElementById('iso-portal-host')) return;
 
@@ -52,8 +52,6 @@
 
         const host = document.createElement('div');
         host.id = 'iso-portal-host';
-        
-        let isCompact = false;
         
         host.style.cssText = `
             position: fixed !important;
@@ -65,39 +63,7 @@
             align-items: center !important;
         `;
 
-        // Size toggle button (leftmost)
-        const sizeBtn = document.createElement('button');
-        sizeBtn.className = 'iso-btn iso-size';
-        sizeBtn.innerText = '−';
-        sizeBtn.style.cssText = `
-            all: unset !important;
-            color: #fff !important;
-            font-size: 14px !important;
-            font-weight: bold !important;
-            cursor: pointer !important;
-            padding: 4px 8px !important;
-            min-width: 24px !important;
-            min-height: 24px !important;
-            text-align: center !important;
-            background: rgba(80, 80, 80, 0.85) !important;
-            border-radius: 4px !important;
-        `;
-        sizeBtn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            isCompact = !isCompact;
-            if (isCompact) {
-                focusBtn.style.display = 'none';
-                if (extractBtn) extractBtn.style.display = 'none';
-                sizeBtn.innerText = '+';
-            } else {
-                focusBtn.style.display = '';
-                if (extractBtn) extractBtn.style.display = '';
-                sizeBtn.innerText = '−';
-            }
-        };
-
-        // Focus button
+        // Focus button (minimal)
         const focusBtn = document.createElement('button');
         focusBtn.className = 'iso-btn iso-focus';
         focusBtn.innerText = '▶';
@@ -108,7 +74,7 @@
             launchFocus(video);
         };
 
-        // Extract button (only in iframe)
+        // Extract button (only in iframe, minimal)
         let extractBtn = null;
         if (isIframe) {
             extractBtn = document.createElement('button');
@@ -128,28 +94,27 @@
             };
         }
 
-        // Apply base styles
+        // Apply minimal styles
         const style = document.createElement('style');
         style.id = 'iso-host-style';
         style.textContent = `
             .iso-btn {
                 all: unset !important;
                 color: #fff !important;
-                font-size: 14px !important;
+                font-size: 12px !important;
                 font-weight: 600 !important;
                 cursor: pointer !important;
-                padding: 6px 10px !important;
-                min-width: 32px !important;
-                min-height: 32px !important;
+                padding: 4px 8px !important;
+                min-width: 28px !important;
+                min-height: 28px !important;
                 text-align: center !important;
                 background: rgba(0, 0, 0, 0.85) !important;
-                border-radius: 6px !important;
+                border-radius: 4px !important;
             }
         `;
         document.head.appendChild(style);
 
-        // Add buttons in order: size toggle | extract | focus
-        host.appendChild(sizeBtn);
+        // Add buttons in order
         if (extractBtn) host.appendChild(extractBtn);
         host.appendChild(focusBtn);
         
@@ -168,6 +133,9 @@
         document.body.replaceChildren();
         document.body.style.cssText = 'background: #000 !important; margin: 0 !important; overflow: hidden !important;';
 
+        // Hide native video controls
+        video.removeAttribute('controls');
+
         // Styles - Mobile minimalist
         const style = document.createElement('style');
         style.innerHTML = `
@@ -175,13 +143,13 @@
             #p-wrap { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #000; }
             #p-controls { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 2147483647; }
             video { max-width: 100% !important; max-height: calc(100vh - 180px) !important; width: 100% !important; height: auto !important; object-fit: contain !important; }
-            .ctrl-btn { all: unset; color: #fff; font-size: 12px; cursor: pointer; padding: 6px 10px; }
+            .ctrl-btn { all: unset; color: #fff; font-size: 11px; cursor: pointer; padding: 6px 8px; white-space: nowrap; }
             #v-slider { width: 60px; height: 3px; accent-color: #fff; }
             #p-bar { width: 100%; min-height: 32px; display: flex; align-items: center; padding: 14px 0; }
             #p-bar-inner { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; position: relative; }
             #p-fill { height: 100%; background: #fff; border-radius: 2px; width: 0; }
-            #p-time { color: #fff; font-size: 11px; }
-            #s-ind { position: fixed; top: 15px; right: 15px; color: #fff; font-size: 12px; cursor: pointer; z-index: 2147483647; padding: 8px; }
+            #p-time { color: #fff; font-size: 11px; white-space: nowrap; }
+            #s-ind { position: fixed; top: 15px; right: 15px; color: #fff; font-size: 12px; cursor: pointer; z-index: 2147483647; padding: 6px; }
             #fs-btn { position: fixed; top: 15px; left: 15px; z-index: 2147483647; }
             video::-webkit-media-controls { display: none !important; }
             video::-webkit-media-controls-enclosure { display: none !important; }
@@ -189,11 +157,14 @@
             video::-webkit-media-controls-overlay-enclosure { display: none !important; }
             video::-moz-media-controls { display: none !important; }
             video::-moz-media-controls-enclosure { display: none !important; }
-            :fullscreen video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; max-width: 100vw !important; max-height: 100vh !important; }
-            :fullscreen #p-controls { display: flex !important; }
-            :fullscreen #s-ind, :fullscreen #fs-btn { font-size: 14px !important; padding: 10px !important; display: block !important; }
+            video::-internal-media-controls-list-button { display: none !important; }
             video::-internal-media-controls-overlay-cast-button { display: none !important; }
             video::-webkit-media-controls-remote-cast-button { display: none !important; }
+            :fullscreen video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; max-width: 100vw !important; max-height: 100vh !important; }
+            :fullscreen #p-controls { display: flex !important; }
+            :fullscreen #s-ind, :fullscreen #fs-btn { font-size: 13px !important; padding: 8px !important; display: block !important; }
+            video > .fv-hide-controls { display: none !important; }
+            video::-webkit-media-controls-inline-video-picture-in-picture-button { display: none !important; }
         `;
         document.head.appendChild(style);
 
@@ -234,7 +205,12 @@
             if (document.fullscreenElement) {
                 document.exitFullscreen().catch(() => {});
             } else {
-                document.documentElement.requestFullscreen().catch(() => {});
+                // Hide native controls before entering fullscreen
+                video.style.display = 'none';
+                setTimeout(() => {
+                    video.style.display = '';
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }, 50);
             }
         };
 
@@ -263,13 +239,13 @@
         seekFwdBtn.innerText = '+' + SEEK_STEP;
         seekFwdBtn.onclick = () => { video.currentTime = Math.min(video.duration, video.currentTime + SEEK_STEP); };
 
-        // Volume
+        // Mute button with text
         const muteBtn = document.createElement('button');
         muteBtn.className = 'ctrl-btn';
-        muteBtn.innerText = '🔊';
+        muteBtn.innerText = 'MUTE';
         muteBtn.onclick = () => {
             video.muted = !video.muted;
-            muteBtn.innerText = video.muted ? '🔇' : '🔊';
+            muteBtn.innerText = video.muted ? 'UNMUTE' : 'MUTE';
         };
 
         const volumeSlider = document.createElement('input');
@@ -282,12 +258,12 @@
         volumeSlider.oninput = (e) => {
             video.volume = parseFloat(e.target.value);
             video.muted = false;
-            muteBtn.innerText = video.volume === 0 ? '🔇' : '🔊';
+            muteBtn.innerText = 'MUTE';
         };
 
         // Controls row
         const controlsRow = document.createElement('div');
-        controlsRow.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 8px;';
+        controlsRow.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 6px;';
         controlsRow.appendChild(fsBtn);
         controlsRow.appendChild(speedInd);
         controlsRow.appendChild(seekBackBtn);
@@ -370,7 +346,6 @@
             if (e.key === 'Escape') location.reload();
         };
 
-        video.controls = true;
         video.play().catch(() => {});
     }
 
