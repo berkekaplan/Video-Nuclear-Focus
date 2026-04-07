@@ -83,7 +83,7 @@
 
         // Main button - smaller for mobile (24px minimum for touch)
         const btn = document.createElement('button');
-        btn.innerText = isIframe ? 'EXT' : 'FOC';
+        btn.innerText = isIframe ? 'EXTRACT' : 'FOCUS';
         btn.style.cssText = `
             all: unset !important;
             padding: 4px 8px !important;
@@ -124,85 +124,47 @@
         (document.body || document.documentElement).appendChild(host);
     }
 
-    // Main focus mode - only speed control, keep native player
+    // Main focus mode - add speed overlay without replacing page
     function launchFocus(video) {
-        if (document.getElementById('p-wrap')) return;
-
-        cleanup();
+        if (document.getElementById('iso-speed-overlay')) return;
 
         const originalSpeed = video.playbackRate;
 
-        // Replace body content
-        document.body.replaceChildren();
-        document.body.style.cssText = 'background: #000 !important; margin: 0 !important; overflow: hidden !important; width: 100vw; height: 100vh;';
-
-        // Styles - only speed control overlay
-        const style = document.createElement('style');
-        style.textContent = `
-            html { background: #000 !important; }
-            body { background: #000 !important; }
-            #p-wrap { 
-                position: fixed; 
-                inset: 0; 
-                display: flex; 
-                justify-content: center; 
-                align-items: center; 
-                background: #000; 
-            }
-            #p-video { 
-                width: 100vw !important; 
-                height: 100vh !important; 
-                object-fit: contain !important; 
-                outline: none !important;
-            }
-            /* Keep native controls visible */
-            video::-webkit-media-controls { display: flex !important; }
-            video::-webkit-media-controls-overlay-enclosure { display: flex !important; }
-            video::-webkit-media-controls-enclosure { display: flex !important; }
-            #s-btn { 
-                position: fixed; 
-                top: 10px; 
-                right: 10px; 
-                color: #fff; 
-                font-family: monospace; 
-                cursor: pointer; 
-                z-index: 2147483647; 
-                font-size: 13px; 
-                background: rgba(0,0,0,0.7);
-                padding: 6px 10px;
-                border-radius: 4px;
-                border: 1px solid rgba(255,255,255,0.3);
-            }
-            #s-btn:active { background: rgba(255,255,255,0.2); }
-        `;
-        document.head.appendChild(style);
-
-        // Wrap container
-        const wrap = document.createElement('div');
-        wrap.id = 'p-wrap';
-
-        // Keep video native controls - do NOT remove controls attribute
-        video.id = 'p-video';
-        video.style.cssText = 'width: 100vw !important; height: 100vh !important; object-fit: contain !important;';
-
-        // Speed control button only
+        // Just add a floating speed button, don't replace page content
         const speedBtn = document.createElement('div');
-        speedBtn.id = 's-btn';
+        speedBtn.id = 'iso-speed-overlay';
+        speedBtn.style.cssText = `
+            position: fixed !important;
+            top: 10px !important;
+            right: 10px !important;
+            color: #fff !important;
+            font-family: monospace !important;
+            cursor: pointer !important;
+            z-index: 2147483647 !important;
+            font-size: 13px !important;
+            background: rgba(0,0,0,0.7) !important;
+            padding: 6px 10px !important;
+            border-radius: 4px !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
+        `;
         speedBtn.innerHTML = `${originalSpeed}X`;
-        speedBtn.onclick = () => {
+        
+        speedBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             currentSpeedIdx = (currentSpeedIdx + 1) % SPEEDS.length;
             video.playbackRate = SPEEDS[currentSpeedIdx];
             speedBtn.innerHTML = `${SPEEDS[currentSpeedIdx]}X`;
         };
 
-        // Append elements
-        document.body.appendChild(wrap);
-        document.body.appendChild(speedBtn);
-        wrap.appendChild(video);
+        (document.body || document.documentElement).appendChild(speedBtn);
 
-        // Escape on mobile
+        // Escape to remove overlay
         window.onkeydown = (e) => {
-            if (e.key === 'Escape') location.reload();
+            if (e.key === 'Escape') {
+                speedBtn.remove();
+            }
         };
     }
 
