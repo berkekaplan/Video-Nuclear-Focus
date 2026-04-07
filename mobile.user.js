@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Mobil Focus (v5.3 - Minimal)
-// @version      5.3
+// @name         Mobil Focus (v5.4 - Minimal)
+// @version      5.4
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -44,7 +44,7 @@
         return null;
     }
 
-    // Inject floating buttons with pinch-to-zoom
+    // Inject floating buttons with size toggle
     function injectButton(video) {
         if (document.getElementById('iso-portal-host')) return;
 
@@ -53,9 +53,7 @@
         const host = document.createElement('div');
         host.id = 'iso-portal-host';
         
-        let currentScale = 1;
-        let initialDistance = 0;
-        let initialScale = 1;
+        let isCompact = false;
         
         host.style.cssText = `
             position: fixed !important;
@@ -63,13 +61,47 @@
             right: 10px !important;
             z-index: 2147483647 !important;
             display: flex !important;
-            gap: 6px !important;
+            gap: 4px !important;
+            align-items: center !important;
         `;
+
+        // Size toggle button (leftmost)
+        const sizeBtn = document.createElement('button');
+        sizeBtn.className = 'iso-btn iso-size';
+        sizeBtn.innerText = '−';
+        sizeBtn.style.cssText = `
+            all: unset !important;
+            color: #fff !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            padding: 4px 8px !important;
+            min-width: 24px !important;
+            min-height: 24px !important;
+            text-align: center !important;
+            background: rgba(80, 80, 80, 0.85) !important;
+            border-radius: 4px !important;
+        `;
+        sizeBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isCompact = !isCompact;
+            if (isCompact) {
+                focusBtn.style.display = 'none';
+                if (extractBtn) extractBtn.style.display = 'none';
+                sizeBtn.innerText = '+';
+            } else {
+                focusBtn.style.display = '';
+                if (extractBtn) extractBtn.style.display = '';
+                sizeBtn.innerText = '−';
+            }
+        };
 
         // Focus button
         const focusBtn = document.createElement('button');
         focusBtn.className = 'iso-btn iso-focus';
-        focusBtn.innerText = '▶ FOCUS';
+        focusBtn.innerText = '▶';
+        focusBtn.title = 'FOCUS';
         focusBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -81,7 +113,8 @@
         if (isIframe) {
             extractBtn = document.createElement('button');
             extractBtn.className = 'iso-btn iso-extract';
-            extractBtn.innerText = '⬆ EXTRACT';
+            extractBtn.innerText = '⬆';
+            extractBtn.title = 'EXTRACT';
             extractBtn.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -102,52 +135,23 @@
             .iso-btn {
                 all: unset !important;
                 color: #fff !important;
-                font-size: 12px !important;
+                font-size: 14px !important;
                 font-weight: 600 !important;
                 cursor: pointer !important;
-                padding: 8px 12px !important;
-                min-width: 36px !important;
-                min-height: 36px !important;
+                padding: 6px 10px !important;
+                min-width: 32px !important;
+                min-height: 32px !important;
                 text-align: center !important;
                 background: rgba(0, 0, 0, 0.85) !important;
                 border-radius: 6px !important;
-                transition: transform 0.1s ease !important;
-                transform-origin: center center !important;
             }
         `;
         document.head.appendChild(style);
 
-        // Pinch-to-zoom handler
-        function getDistance(t1, t2) {
-            return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-        }
-
-        host.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                initialDistance = getDistance(e.touches[0], e.touches[1]);
-                initialScale = currentScale;
-            }
-        }, { passive: true });
-
-        host.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 2) {
-                const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                if (initialDistance > 0) {
-                    const scale = (currentDistance / initialDistance) * initialScale;
-                    currentScale = Math.max(0.5, Math.min(2, scale));
-                    focusBtn.style.transform = `scale(${currentScale})`;
-                    if (extractBtn) extractBtn.style.transform = `scale(${currentScale})`;
-                }
-            }
-        }, { passive: true });
-
-        host.addEventListener('touchend', (e) => {
-            initialDistance = 0;
-        }, { passive: true });
-
-        // Add buttons in order
-        host.appendChild(focusBtn);
+        // Add buttons in order: size toggle | extract | focus
+        host.appendChild(sizeBtn);
         if (extractBtn) host.appendChild(extractBtn);
+        host.appendChild(focusBtn);
         
         (document.body || document.documentElement).appendChild(host);
     }
