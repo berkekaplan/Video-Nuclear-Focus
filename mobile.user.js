@@ -17,9 +17,9 @@
     const CONFIG = {
         SPEEDS: [1, 1.25, 1.5, 2, 0.5, 0.75],
         SEEK_STEP: 5,
-        RETRY_DELAY: 2000,
+        INITIAL_RETRY_DELAY: 2000,
+        MAX_RETRY_DELAY: 12000,
         DEBOUNCE_DELAY: 800,
-        SEARCH_TIMEOUT: 45000,
         MAX_Z_INDEX: 2147483647,
         PORTRAIT_SCALE: 0.8
     };
@@ -27,7 +27,7 @@
     // ========== STATE ==========
     let state = {
         currentSpeedIdx: 0,
-        searchStartTime: null,
+        currentRetryDelay: 2000,
         // Pinch-to-zoom state
         currentScale: 1,
         initialDistance: 0,
@@ -35,6 +35,7 @@
     };
 
     let observer = null;
+    let debounceTimerId = null;
     let retryTimerId = null;
     let touchListeners = null;
     let injectButtonStyleAdded = false;
@@ -47,6 +48,11 @@
         if (observer) {
             observer.disconnect();
             observer = null;
+        }
+        
+        if (debounceTimerId) {
+            clearTimeout(debounceTimerId);
+            debounceTimerId = null;
         }
         
         if (retryTimerId) {
@@ -418,30 +424,23 @@
     const handleMutation = () => {
         if (document.getElementById('iso-portal-host') || document.getElementById('p-wrap')) return;
         
-        // Initialize search start time on first call
-        if (!state.searchStartTime) {
-            state.searchStartTime = Date.now();
-        }
-        
-        // Check if timeout exceeded
-        if (Date.now() - state.searchStartTime > CONFIG.SEARCH_TIMEOUT) {
-            return; // Stop searching
-        }
-        
         const target = findVideoNuclear();
         if (target) {
-            state.searchStartTime = null; // Reset
+            state.currentRetryDelay = CONFIG.INITIAL_RETRY_DELAY; // Reset delay
             injectButton(target);
         } else {
             if (retryTimerId) clearTimeout(retryTimerId);
-            retryTimerId = setTimeout(handleMutation, CONFIG.RETRY_DELAY);
+            retryTimerId = setTimeout(handleMutation, state.currentRetryDelay);
+            
+            // Gradually increase delay until max limit (Exponential backoff)
+            state.currentRetryDelay = Math.min(state.currentRetryDelay * 1.3, CONFIG.MAX_RETRY_DELAY);
         }
     };
 
     // ========== INITIALIZATION ==========
     observer = new MutationObserver(() => {
-        if (retryTimerId) clearTimeout(retryTimerId);
-        retryTimerId = setTimeout(handleMutation, CONFIG.DEBOUNCE_DELAY);
+        if (debounceTimerId) clearTimeout(debounceTimerId);
+        debounceTimerId = setTimeout(handleMutation, CONFIG.DEBOUNCE_DELAY);
     });
 
     observer.observe(document.body || document.documentElement, {
