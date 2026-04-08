@@ -18,7 +18,7 @@
         SPEEDS: [1, 1.25, 1.5, 2, 0.5, 0.75],
         RETRY_DELAY: 2000,
         DEBOUNCE_DELAY: 800,
-        SEARCH_TIMEOUT: 15000,
+        SEARCH_TIMEOUT: 45000,
         MAX_Z_INDEX: 2147483647
     };
 

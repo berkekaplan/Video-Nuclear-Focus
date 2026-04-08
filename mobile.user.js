@@ -19,9 +19,9 @@
         SEEK_STEP: 5,
         RETRY_DELAY: 2000,
         DEBOUNCE_DELAY: 800,
-        SEARCH_TIMEOUT: 15000,
+        SEARCH_TIMEOUT: 45000,
         MAX_Z_INDEX: 2147483647,
-        PORTRAIT_SCALE: 0.6
+        PORTRAIT_SCALE: 0.8
     };
 
     // ========== STATE ==========
