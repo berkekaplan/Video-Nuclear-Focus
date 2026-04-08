@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Mobil Focus (v5.6 - Minimal)
-// @version      5.6
+// @version      5.7
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -20,7 +20,7 @@
         RETRY_DELAY: 2000,
         DEBOUNCE_DELAY: 800,
         MAX_Z_INDEX: 2147483647,
-        PORTRAIT_MAX_HEIGHT: '50vh',
+        PORTRAIT_MAX_HEIGHT: '40vh',
         LANDSCAPE_MAX_HEIGHT: 'calc(100vh - 180px)'
     };
 
