@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Mobil Focus (v5.6 - Minimal)
-// @version      5.7
+// @version      5.8
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -20,8 +20,7 @@
         RETRY_DELAY: 2000,
         DEBOUNCE_DELAY: 800,
         MAX_Z_INDEX: 2147483647,
-        PORTRAIT_MAX_HEIGHT: '40vh',
-        LANDSCAPE_MAX_HEIGHT: 'calc(100vh - 180px)'
+        PORTRAIT_SCALE: 0.6
     };
 
     // ========== STATE ==========
@@ -218,9 +217,6 @@
 
         // Detect video orientation (portrait = height > width)
         const isPortrait = video.videoHeight > video.videoWidth;
-        const videoMaxHeight = isPortrait 
-            ? CONFIG.PORTRAIT_MAX_HEIGHT 
-            : CONFIG.LANDSCAPE_MAX_HEIGHT;
 
         // Styles - Mobile minimalist
         const style = document.createElement('style');
@@ -229,7 +225,8 @@
             * { box-sizing: border-box; }
             #p-wrap { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #000; }
             #p-controls { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px; display: flex; flex-direction: column; gap: 10px; z-index: ${CONFIG.MAX_Z_INDEX}; }
-            video { max-width: 100% !important; max-height: ${videoMaxHeight} !important; width: 100% !important; height: auto !important; object-fit: contain !important; }
+            video { max-width: 100% !important; max-height: calc(100vh - 180px) !important; width: 100% !important; height: auto !important; object-fit: contain !important; }
+            video.portrait { transform: scale(${CONFIG.PORTRAIT_SCALE}) !important; transform-origin: center center !important; }
             .ctrl-btn { all: unset; color: #fff; font-size: 12px; cursor: pointer; padding: 6px 10px; }
             #v-slider { width: 60px; height: 3px; accent-color: #fff; }
             #p-bar { width: 100%; min-height: 32px; display: flex; align-items: center; padding: 14px 0; }
@@ -367,6 +364,11 @@
         document.body.appendChild(wrap);
         document.body.appendChild(controls);
         wrap.appendChild(video);
+
+        // Apply portrait class if video is portrait orientation
+        if (isPortrait) {
+            video.classList.add('portrait');
+        }
 
         // Speed change
         speedInd.addEventListener('click', () => {
