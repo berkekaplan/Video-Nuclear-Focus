@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Minimalist Focus (v8.1 - Ultra Minimal)
+// @name         Minimalist Focus (Ultra Minimal)
 // @version      8.3
 // @description  Aggressively cleans page to focus only on video content
 // @author       Admin

@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Mobil Focus (v5.6 - Minimal)
+// @name         Mobil Focus (Minimal)
 // @version      5.11
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
