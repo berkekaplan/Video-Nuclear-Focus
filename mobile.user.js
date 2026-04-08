@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Mobil Focus (v5.6 - Minimal)
-// @version      5.8
+// @version      5.9
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -215,8 +215,8 @@
 
         document.body.style.cssText = 'background: #000 !important; margin: 0 !important; overflow: hidden !important;';
 
-        // Detect video orientation (portrait = height > width)
-        const isPortrait = video.videoHeight > video.videoWidth;
+        // Detect screen orientation (portrait = height > width)
+        const isPortrait = window.innerHeight > window.innerWidth;
 
         // Styles - Mobile minimalist
         const style = document.createElement('style');
@@ -241,7 +241,7 @@
             video::-webkit-media-controls-overlay-enclosure { display: none !important; }
             video::-moz-media-controls { display: none !important; }
             video::-moz-media-controls-enclosure { display: none !important; }
-            :fullscreen video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; max-width: 100vw !important; max-height: 100vh !important; }
+            :fullscreen video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; max-width: 100vw !important; max-height: 100vh !important; transform: none !important; }
             :fullscreen #p-controls { display: flex !important; }
             :fullscreen #s-ind, :fullscreen #fs-btn { font-size: 14px !important; padding: 10px !important; display: block !important; }
             video::-internal-media-controls-overlay-cast-button { display: none !important; }
