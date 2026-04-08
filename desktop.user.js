@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Minimalist Focus (v8.1 - Ultra Minimal)
-// @version      8.1
+// @version      8.3
 // @description  Aggressively cleans page to focus only on video content
 // @author       Admin
 // @match        *://*/*
@@ -18,6 +18,7 @@
         SPEEDS: [1, 1.25, 1.5, 2, 0.5, 0.75],
         RETRY_DELAY: 2000,
         DEBOUNCE_DELAY: 800,
+        SEARCH_TIMEOUT: 15000,
         MAX_Z_INDEX: 2147483647
     };
 
@@ -26,7 +27,7 @@
         currentSpeedIdx: 0,
         isDragging: false,
         dragOffset: { x: 0, y: 0 },
-        videoFound: false
+        searchStartTime: null
     };
 
     let observer = null;
@@ -130,49 +131,28 @@
         const shadow = host.attachShadow({ mode: 'open' });
         const isIframe = window.self !== window.top;
 
-        const toggle = document.createElement('div');
-        toggle.id = 'iso-portal-toggle';
-        toggle.innerHTML = '&#9654;';
-        toggle.style.cssText = `
-            padding: 4px 6px;
-            color: #fff;
-            cursor: pointer;
-            font-family: monospace;
-            font-size: 10px;
-            border-right: 1px solid #555;
-            user-select: none;
-            transition: background 0.2s;
-        `;
-
-        const btn = document.createElement('button');
-        btn.innerText = isIframe ? 'EXTRACT' : 'FOCUS';
-        btn.style.cssText = `
-            all: unset !important;
-            padding: 4px 8px !important;
-            color: #fff !important;
-            cursor: pointer !important;
-            font-family: monospace !important;
-            font-size: 10px !important;
-            white-space: nowrap;
-            transition: background 0.2s;
-        `;
-
-        let isOpen = true;
-        toggle.addEventListener('click', () => {
-            isOpen = !isOpen;
-            btn.style.display = isOpen ? 'block' : 'none';
-            toggle.innerHTML = isOpen ? '&#9654;' : '&#9664;';
-        });
-
-        toggle.addEventListener('mouseover', () => toggle.style.background = 'rgba(255,255,255,0.2)');
-        toggle.addEventListener('mouseout', () => toggle.style.background = 'transparent');
-        btn.addEventListener('mouseover', () => btn.style.background = 'rgba(255,255,255,0.2)');
-        btn.addEventListener('mouseout', () => btn.style.background = 'transparent');
-
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            if (isIframe) {
+        // Only show relevant button based on context
+        if (isIframe) {
+            // Iframe: only EXTRACT button, no toggle needed
+            const btn = document.createElement('button');
+            btn.style.cssText = `
+                all: unset !important;
+                padding: 4px 8px !important;
+                color: #fff !important;
+                cursor: pointer !important;
+                font-family: monospace !important;
+                font-size: 10px !important;
+                white-space: nowrap;
+                background: rgba(0, 0, 0, 0.85) !important;
+                border-radius: 6px !important;
+                transition: background 0.2s;
+            `;
+            btn.innerText = 'EXTRACT';
+            btn.addEventListener('mouseover', () => btn.style.background = 'rgba(255,255,255,0.2)');
+            btn.addEventListener('mouseout', () => btn.style.background = 'rgba(0, 0, 0, 0.85)');
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
                 const a = document.createElement('a');
                 a.href = window.location.href;
                 a.rel = 'referrer';
@@ -180,13 +160,59 @@
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-            } else {
-                launchFocus(video);
-            }
-        });
+            });
+            shadow.appendChild(btn);
+        } else {
+            // Not iframe: toggle + FOCUS button
+            const toggle = document.createElement('div');
+            toggle.id = 'iso-portal-toggle';
+            toggle.innerHTML = '&#9654;';
+            toggle.style.cssText = `
+                padding: 4px 6px;
+                color: #fff;
+                cursor: pointer;
+                font-family: monospace;
+                font-size: 10px;
+                border-right: 1px solid #555;
+                user-select: none;
+                transition: background 0.2s;
+            `;
 
-        shadow.appendChild(toggle);
-        shadow.appendChild(btn);
+            const btn = document.createElement('button');
+            btn.innerText = 'FOCUS';
+            btn.style.cssText = `
+                all: unset !important;
+                padding: 4px 8px !important;
+                color: #fff !important;
+                cursor: pointer !important;
+                font-family: monospace !important;
+                font-size: 10px !important;
+                white-space: nowrap;
+                transition: background 0.2s;
+            `;
+
+            let isOpen = true;
+            toggle.addEventListener('click', () => {
+                isOpen = !isOpen;
+                btn.style.display = isOpen ? 'block' : 'none';
+                toggle.innerHTML = isOpen ? '&#9654;' : '&#9664;';
+            });
+
+            toggle.addEventListener('mouseover', () => toggle.style.background = 'rgba(255,255,255,0.2)');
+            toggle.addEventListener('mouseout', () => toggle.style.background = 'transparent');
+            btn.addEventListener('mouseover', () => btn.style.background = 'rgba(255,255,255,0.2)');
+            btn.addEventListener('mouseout', () => btn.style.background = 'transparent');
+
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                launchFocus(video);
+            });
+
+            shadow.appendChild(toggle);
+            shadow.appendChild(btn);
+        }
+        
         (document.body || document.documentElement).appendChild(host);
     };
 
@@ -252,11 +278,21 @@
     const handleMutation = () => {
         if (document.getElementById('iso-portal-host') || document.getElementById('p-wrap')) return;
         
+        // Initialize search start time on first call
+        if (!state.searchStartTime) {
+            state.searchStartTime = Date.now();
+        }
+        
+        // Check if timeout exceeded
+        if (Date.now() - state.searchStartTime > CONFIG.SEARCH_TIMEOUT) {
+            return; // Stop searching
+        }
+        
         const target = findVideoNuclear();
         if (target) {
-            state.videoFound = true;
+            state.searchStartTime = null; // Reset
             injectButton(target);
-        } else if (!state.videoFound) {
+        } else {
             if (retryTimerId) clearTimeout(retryTimerId);
             retryTimerId = setTimeout(handleMutation, CONFIG.RETRY_DELAY);
         }

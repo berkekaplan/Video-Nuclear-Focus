@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Mobil Focus (v5.6 - Minimal)
-// @version      5.9
+// @version      5.11
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -19,6 +19,7 @@
         SEEK_STEP: 5,
         RETRY_DELAY: 2000,
         DEBOUNCE_DELAY: 800,
+        SEARCH_TIMEOUT: 15000,
         MAX_Z_INDEX: 2147483647,
         PORTRAIT_SCALE: 0.6
     };
@@ -26,7 +27,7 @@
     // ========== STATE ==========
     let state = {
         currentSpeedIdx: 0,
-        videoFound: false,
+        searchStartTime: null,
         // Pinch-to-zoom state
         currentScale: 1,
         initialDistance: 0,
@@ -110,35 +111,6 @@
             gap: 6px !important;
         `;
 
-        // Focus button
-        const focusBtn = document.createElement('button');
-        focusBtn.className = 'iso-btn iso-focus';
-        focusBtn.innerText = '▶ FOCUS';
-        focusBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            launchFocus(video);
-        });
-
-        // Extract button (only in iframe)
-        let extractBtn = null;
-        if (isIframe) {
-            extractBtn = document.createElement('button');
-            extractBtn.className = 'iso-btn iso-extract';
-            extractBtn.innerText = '⬆ EXTRACT';
-            extractBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const a = document.createElement('a');
-                a.href = window.location.href;
-                a.rel = 'referrer';
-                a.target = '_blank';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-            });
-        }
-
         // Apply base styles (only once)
         if (!injectButtonStyleAdded) {
             const style = document.createElement('style');
@@ -164,37 +136,36 @@
             injectButtonStyleAdded = true;
         }
 
-        // Pinch-to-zoom handler
-        const getDistance = (t1, t2) => {
-            return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-        };
-
-        host.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                state.initialDistance = getDistance(e.touches[0], e.touches[1]);
-                state.initialScale = state.currentScale;
-            }
-        }, { passive: true });
-
-        host.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 2) {
-                const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                if (state.initialDistance > 0) {
-                    const scale = (currentDistance / state.initialDistance) * state.initialScale;
-                    state.currentScale = Math.max(0.5, Math.min(2, scale));
-                    focusBtn.style.transform = `scale(${state.currentScale})`;
-                    if (extractBtn) extractBtn.style.transform = `scale(${state.currentScale})`;
-                }
-            }
-        }, { passive: true });
-
-        host.addEventListener('touchend', () => {
-            state.initialDistance = 0;
-        }, { passive: true });
-
-        // Add buttons in order
-        host.appendChild(focusBtn);
-        if (extractBtn) host.appendChild(extractBtn);
+        // Only show relevant button based on context
+        if (isIframe) {
+            // Iframe: only EXTRACT button
+            const extractBtn = document.createElement('button');
+            extractBtn.className = 'iso-btn';
+            extractBtn.innerText = '⬆ EXTRACT';
+            extractBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const a = document.createElement('a');
+                a.href = window.location.href;
+                a.rel = 'referrer';
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            });
+            host.appendChild(extractBtn);
+        } else {
+            // Not iframe: only FOCUS button
+            const focusBtn = document.createElement('button');
+            focusBtn.className = 'iso-btn';
+            focusBtn.innerText = '▶ FOCUS';
+            focusBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                launchFocus(video);
+            });
+            host.appendChild(focusBtn);
+        }
 
         (document.body || document.documentElement).appendChild(host);
     };
@@ -447,11 +418,21 @@
     const handleMutation = () => {
         if (document.getElementById('iso-portal-host') || document.getElementById('p-wrap')) return;
         
+        // Initialize search start time on first call
+        if (!state.searchStartTime) {
+            state.searchStartTime = Date.now();
+        }
+        
+        // Check if timeout exceeded
+        if (Date.now() - state.searchStartTime > CONFIG.SEARCH_TIMEOUT) {
+            return; // Stop searching
+        }
+        
         const target = findVideoNuclear();
         if (target) {
-            state.videoFound = true;
+            state.searchStartTime = null; // Reset
             injectButton(target);
-        } else if (!state.videoFound) {
+        } else {
             if (retryTimerId) clearTimeout(retryTimerId);
             retryTimerId = setTimeout(handleMutation, CONFIG.RETRY_DELAY);
         }
