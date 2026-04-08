@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Mobil Focus (v5.5 - Minimal)
-// @version      5.5
+// @name         Mobil Focus (v5.6 - Minimal)
+// @version      5.6
 // @description  Minimalist video player for mobile with volume, progress bar and swipe gestures
 // @author       Admin
 // @match        *://*/*
@@ -19,7 +19,9 @@
         SEEK_STEP: 5,
         RETRY_DELAY: 2000,
         DEBOUNCE_DELAY: 800,
-        MAX_Z_INDEX: 2147483647
+        MAX_Z_INDEX: 2147483647,
+        PORTRAIT_MAX_HEIGHT: '50vh',
+        LANDSCAPE_MAX_HEIGHT: 'calc(100vh - 180px)'
     };
 
     // ========== STATE ==========
@@ -214,6 +216,12 @@
 
         document.body.style.cssText = 'background: #000 !important; margin: 0 !important; overflow: hidden !important;';
 
+        // Detect video orientation (portrait = height > width)
+        const isPortrait = video.videoHeight > video.videoWidth;
+        const videoMaxHeight = isPortrait 
+            ? CONFIG.PORTRAIT_MAX_HEIGHT 
+            : CONFIG.LANDSCAPE_MAX_HEIGHT;
+
         // Styles - Mobile minimalist
         const style = document.createElement('style');
         style.id = 'p-styles';
@@ -221,7 +229,7 @@
             * { box-sizing: border-box; }
             #p-wrap { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #000; }
             #p-controls { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px; display: flex; flex-direction: column; gap: 10px; z-index: ${CONFIG.MAX_Z_INDEX}; }
-            video { max-width: 100% !important; max-height: calc(100vh - 180px) !important; width: 100% !important; height: auto !important; object-fit: contain !important; }
+            video { max-width: 100% !important; max-height: ${videoMaxHeight} !important; width: 100% !important; height: auto !important; object-fit: contain !important; }
             .ctrl-btn { all: unset; color: #fff; font-size: 12px; cursor: pointer; padding: 6px 10px; }
             #v-slider { width: 60px; height: 3px; accent-color: #fff; }
             #p-bar { width: 100%; min-height: 32px; display: flex; align-items: center; padding: 14px 0; }
