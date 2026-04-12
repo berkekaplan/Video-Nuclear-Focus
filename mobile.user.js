@@ -78,26 +78,52 @@
         }
     };
 
-    // ========== VIDEO FINDER ==========
-    const findVideoNuclear = () => {
-        const candidates = document.querySelectorAll('video, canvas');
-        for (const el of candidates) {
-            const rect = el.getBoundingClientRect();
-            if (rect.width <= 0 || rect.height <= 0) continue;
-            
-            const isLargeEnough = el.tagName === 'VIDEO' 
-                ? rect.height > 100 
-                : rect.width > 400;
-            
-            const style = window.getComputedStyle(el);
-            const isVisible = style.display !== 'none' 
-                && style.visibility !== 'hidden' 
-                && style.opacity !== '0';
-            
-            if (isLargeEnough && isVisible) return el;
+// ========== VIDEO FINDER ==========
+const findVideoNuclear = () => {
+    const candidates = document.querySelectorAll('video');
+    for (const el of candidates) {
+        // Skip if element is not visible or has zero dimensions
+        const rect = el.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) continue;
+
+        // Skip if element is likely an ad (common ad class names)
+        const classList = el.className.toLowerCase();
+        if (classList.includes('ad') || classList.includes('advertisement') ||
+            classList.includes('promo') || classList.includes('banner') ||
+            classList.includes('googleads') || classList.includes('doubleclick')) {
+            continue;
         }
-        return null;
-    };
+
+        // Check if video has valid source
+        if (!el.src || el.src.length === 0) {
+            // Also check for sources inside video tag
+            const hasSource = el.querySelector('source[src]');
+            if (!hasSource) continue;
+        }
+
+        // Skip very short videos that are likely ads or UI elements
+        // (Only check if duration is already available)
+        if (el.duration > 0 && el.duration < 3) continue;
+
+        // Check if video is likely content (not UI element)
+        const style = window.getComputedStyle(el);
+        if (style.position === 'fixed' || style.position === 'absolute') {
+            // Check if it's in a reasonable viewing area
+            if (rect.top > window.innerHeight * 0.8 || rect.bottom < window.innerHeight * 0.2) {
+                continue;
+            }
+        }
+
+        // Check if video is large enough to be content
+        const isLargeEnough = rect.height > 100;
+        const isVisible = style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && style.opacity !== '0';
+
+        if (isLargeEnough && isVisible) return el;
+    }
+    return null;
+};
 
     // ========== INJECT BUTTON ==========
     const injectButton = (video) => {
